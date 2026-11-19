@@ -17,7 +17,7 @@
 
 // The number that we support, regardless of how many the chip has
 #define MAX_N_DACS 0
-#define MAX_N_RMT 0
+#define MAX_N_RMT 1
 #define MAX_N_I2SO 0
 #define MAX_N_PARLIO 1
 #define MAX_N_SPI 1
