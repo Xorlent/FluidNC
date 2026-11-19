@@ -29,6 +29,12 @@
 #endif
 #include <esp_attr.h>  // IRAM_ATTR
 
+#if defined(CONFIG_IDF_TARGET_ESP32P4)
+#    define RMT_CLOCK_SRC RMT_CLK_SRC_PLL_F80M
+#else
+#    define RMT_CLOCK_SRC RMT_CLK_SRC_APB
+#endif
+
 static uint32_t _pulse_delay_us;
 static uint32_t _dir_delay_us;
 
@@ -79,10 +85,10 @@ static uint32_t init_step_pin(pinnum_t step_pin, bool step_inverted) {
 
     rmt_enable_module();
 
-    // APB (80 MHz) is always running on ESP32 and ESP32-S3.  The source is
-    // per channel on ESP32 and per group on ESP32-S3, so set it each time.
+    // The source is per channel on ESP32 and per group on ESP32-S3/P4.
+    // Set it for each pin regardless. P4 uses the 80 MHz PLL; ESP32/S3 use APB.
     PERIPH_RCC_ATOMIC() {
-        rmt_ll_set_group_clock_src(&RMT, chan, RMT_CLK_SRC_APB, 1, 0, 0);
+        rmt_ll_set_group_clock_src(&RMT, chan, RMT_CLOCK_SRC, 1, 0, 0);
         rmt_ll_enable_group_clock(&RMT, true);
     }
 
@@ -129,7 +135,7 @@ static void IRAM_ATTR set_step_pin(pinnum_t pin, bool level) {
     RMT.conf_ch[pin].conf1.mem_rd_rst = 1;
     RMT.conf_ch[pin].conf1.mem_rd_rst = 0;
     RMT.conf_ch[pin].conf1.tx_start   = 1;
-#elif CONFIG_IDF_TARGET_ESP32S3
+#elif defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
     RMT.chnconf0[pin].mem_rd_rst_chn  = 1;
     RMT.chnconf0[pin].mem_rd_rst_chn  = 0;
     // Latch the channel configuration, as rmt_ll_tx_start() does

@@ -89,6 +89,9 @@ uint32_t stepTimerInit(bool (*callback)(void)) {
 #    else
 #        include "soc/timer_periph.h"
 #    endif
+#    if defined(CONFIG_IDF_TARGET_ESP32P4)
+#        include <esp_private/periph_ctrl.h>
+#    endif
 
 #    define IRAM IRAM_ATTR
 
@@ -137,6 +140,18 @@ void IRAM stepTimerStop() {
 }
 
 uint32_t stepTimerInit(bool (*callback)(void)) {
+#if defined(CONFIG_IDF_TARGET_ESP32P4)
+    // The P4 timer group is not clocked until its bus clock is enabled.
+    uint8_t rc_name;
+    PERIPH_RCC_ACQUIRE_ATOMIC(PERIPH_TIMG0_MODULE, rc_name) {
+        timer_ll_enable_bus_clock(0, true);
+        timer_ll_reset_register(0);
+    }
+    PERIPH_RCC_ATOMIC() {
+        timer_ll_set_clock_source(0, TIMER_0, GPTIMER_CLK_SRC_PLL_F80M);
+        timer_ll_enable_clock(0, TIMER_0, true);
+    }
+#endif
     timer_ll_enable_intr(&TIMERG0, TIMER_LL_EVENT_ALARM(TIMER_0), false);
     timer_ll_enable_counter(&TIMERG0, TIMER_0, false);
     timer_ll_set_reload_value(&TIMERG0, TIMER_0, 0ULL);
