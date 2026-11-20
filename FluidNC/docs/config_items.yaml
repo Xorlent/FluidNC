@@ -17,6 +17,7 @@ enum_types:
   pulseUsValues: &pulseUsValues [1, 2, 4]
   stepTypes: &stepTypes [Timed, PARLIO, RMT, I2S_STATIC, I2S_STREAM, Simulator, PIO]
   trinamicModes: &trinamicModes [StealthChop, CoolStep, StallGuard]
+  types: &types [sdspi, usb_msc]
 
 # Which of the section keys below are spindle types (see SPINDLE_SECTIONS
 # in tools/build_config_docs.py) -- lets a consumer (e.g. the wizard) tell
@@ -520,6 +521,13 @@ parlio:
       PARLIO data bit 15 output. Use only for stepper motor step and direction signals.
 
 sdcard:
+  type:
+    type: enum
+    values: *types
+    default: 'sdspi'
+    description: |
+      Storage backend for the logical /sd volume. sdspi uses an SPI SD card; usb_msc uses a FAT32/FAT16 USB flash drive on supported ESP32-P4 boards. The two backends are mutually exclusive; cs_pin, card_detect_pin and frequency_hz apply only to sdspi.
+
   cs_pin:
     type: pin
     default: 'NO_PIN'

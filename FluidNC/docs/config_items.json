@@ -36,6 +36,10 @@
    "StealthChop",
    "CoolStep",
    "StallGuard"
+  ],
+  "types": [
+   "sdspi",
+   "usb_msc"
   ]
  },
  "spindle_sections": [
@@ -544,6 +548,15 @@
   }
  },
  "sdcard": {
+  "type": {
+   "type": "enum",
+   "values": [
+    "sdspi",
+    "usb_msc"
+   ],
+   "default": "sdspi",
+   "description": "Storage backend for the logical /sd volume. sdspi uses an SPI SD card; usb_msc uses a FAT32/FAT16 USB flash drive on supported ESP32-P4 boards. The two backends are mutually exclusive; cs_pin, card_detect_pin and frequency_hz apply only to sdspi.\n"
+  },
   "cs_pin": {
    "type": "pin",
    "default": "NO_PIN",
