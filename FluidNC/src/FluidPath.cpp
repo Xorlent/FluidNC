@@ -2,7 +2,6 @@
 // Use of this source code is governed by a GPLv3 license that can be found in the LICENSE file.
 
 #include "FluidPath.h"
-#include "Driver/sdspi.h"
 #include "Config.h"
 #include "Error.h"
 #include "Machine/MachineConfig.h"
@@ -85,7 +84,7 @@ SDMountState::SDMountState() {
         if (sd_failed_ec && (millis() - sd_failed_at) < sd_retry_holdoff_ms) {
             throw stdfs::filesystem_error { "Failed to mount SD card", sd_failed_ec };
         }
-        auto ec = sd_mount();
+        auto ec = config->_sdCard->mount();
         if (ec) {
             sd_failed_ec = ec;
             sd_failed_at = millis();
@@ -99,7 +98,7 @@ SDMountState::SDMountState() {
 SDMountState::~SDMountState() {
     SDLock lock(sd_lifecycle_lock);
     if (lock.locked() && sd_mount_users && --sd_mount_users == 0) {
-        sd_unmount();
+        config->_sdCard->unmount();
     }
 }
 

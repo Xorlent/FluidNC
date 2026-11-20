@@ -4,11 +4,13 @@
 #pragma once
 
 #include "Configuration/Configurable.h"
+#include "EnumItem.h"
 #include "WebUI/Authentication.h"
 #include "Pin.h"
 #include "Error.h"
 
 #include <cstdint>
+#include <system_error>
 
 class SDCard : public Configuration::Configurable {
 public:
@@ -22,12 +24,20 @@ public:
         BusyReading   = 6,
     };
 
+    // Numeric values are stable because they are part of the config format.
+    enum Type : uint32_t {
+        SDSPI   = 0,
+        USB_MSC = 1,
+    };
+    static const EnumItem types[];
+
 private:
     State _state;
     Pin   _cardDetect;
     Pin   _cs;
 
     uint32_t _frequency_hz = 8000000;  // Set to nonzero to override the default
+    uint32_t _type         = SDSPI;
 
 public:
     SDCard();
@@ -39,11 +49,26 @@ public:
     const char* filename();
     bool        config_ok = false;
 
-    // Initializes pins.
+    // Initializes the selected backend.
     void init();
+
+    // Mount/unmount the logical /sd volume. Mount is lazy, like the SD card.
+    std::error_code mount(uint32_t max_files = 2);
+    void            unmount();
+
+    bool isUSB() const { return _type == USB_MSC; }
 
     // Configuration handlers.
     void group(Configuration::HandlerBase& handler) override {
+        // @config type
+        // @default sdspi
+        // @ignore_drift YAML token is sdspi; the C++ initializer is the SDSPI enum constant.
+        // Storage backend for the logical /sd volume. sdspi uses an SPI SD
+        // card; usb_msc uses a FAT32/FAT16 USB flash drive on supported
+        // ESP32-P4 boards. The two backends are mutually exclusive; cs_pin,
+        // card_detect_pin and frequency_hz apply only to sdspi.
+        handler.item("type", _type, types);
+
         // @config cs_pin
         // @default NO_PIN
         // @pin_attributes output

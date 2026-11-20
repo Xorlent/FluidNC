@@ -8,28 +8,55 @@
 #    include "Machine/MachineConfig.h"
 #    include "Channel.h"
 #    include "Report.h"
+#    include "Assertion.h"
 
 #    include "Driver/sdspi.h"
+#    if MAX_N_USB_MSC
+#        include "Driver/usb_msc.h"
+#    endif
 #    include "SettingsDefinitions.h"
 #    include "FluidPath.h"
+
+const EnumItem SDCard::types[] = {
+    { SDCard::SDSPI, "sdspi" },
+#if MAX_N_USB_MSC
+    { SDCard::USB_MSC, "usb_msc" },
+#endif
+    EnumItem(SDCard::SDSPI),
+};
 
 SDCard::SDCard() : _state(State::Idle) {}
 
 void SDCard::init() {
+    if (isUSB()) {
+#if MAX_N_USB_MSC
+        config_ok = usb_msc_init();
+#else
+        log_error("USB MSC storage is not supported on this platform");
+#endif
+        return;
+    }
+
     static bool init_message = true;  // used to show messages only once.
     pinnum_t    csPin;
     pinnum_t    csFallback;
 
     if (_cs.defined()) {
-        if (!config->_spi->defined()) {
+        if (!config->_spi || !config->_spi->defined()) {
             log_error("SD needs SPI defined");
-        } else if (init_message) {
+            return;
+        }
+        if (init_message) {
             log_info("SD Card cs_pin:" << _cs.name() << " detect:" << _cardDetect.name() << " freq:" << _frequency_hz);
             init_message = false;
         }
         _cs.setAttr(Pin::Attr::Output);
         csPin = _cs.getNative(Pin::Capabilities::Output | Pin::Capabilities::Native);
     } else if ((csFallback = sd_fallback_cs->get()) != INVALID_PINNUM) {
+        if (!config->_spi || !config->_spi->defined()) {
+            log_error("SD needs SPI defined");
+            return;
+        }
         csPin = csFallback;
         log_info("Using fallback CS pin " << int(csPin));
     } else {
@@ -48,10 +75,33 @@ void SDCard::init() {
     }
 }
 
+std::error_code SDCard::mount(uint32_t max_files) {
+    if (isUSB()) {
+#if MAX_N_USB_MSC
+        return usb_msc_mount(max_files);
+#else
+        return std::make_error_code(std::errc::function_not_supported);
+#endif
+    }
+    return sd_mount(max_files);
+}
+
+void SDCard::unmount() {
+    if (isUSB()) {
+#if MAX_N_USB_MSC
+        usb_msc_unmount();
+#endif
+        return;
+    }
+    sd_unmount();
+}
+
 void SDCard::afterParse() {
-    // if (_cs.undefined()) {
-    //     _cs = Pin::create("gpio.5");
-    // }
+#if !MAX_N_USB_MSC
+    if (isUSB()) {
+        throw AssertionFailed::create("sdcard type usb_msc requires ESP32-P4");
+    }
+#endif
 }
 
 SDCard::~SDCard() {}

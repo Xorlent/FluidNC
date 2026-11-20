@@ -99,11 +99,14 @@ void setup() {
 #    if MAX_N_SPI
         if (config->_spi) {
             config->_spi->init();
-#        if MAX_N_SDCARD
-            if (config->_sdCard != nullptr) {
-                config->_sdCard->init();
-            }
-#        endif
+        }
+#    endif
+
+#    if MAX_N_SDCARD
+        // Storage does not necessarily need SPI: sdcard: type: usb_msc uses
+        // the P4 USB host path instead.
+        if (config->_sdCard != nullptr) {
+            config->_sdCard->init();
         }
 #    endif
 

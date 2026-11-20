@@ -8,6 +8,12 @@
 #include "Types.h"
 #include "Platform.h"
 
+// USB mass-storage host support for the sdcard volume. Platforms that provide
+// it define this to 1 in their Platform.h; everything else defaults to none.
+#ifndef MAX_N_USB_MSC
+#    define MAX_N_USB_MSC 0
+#endif
+
 // This file contains compile-time configuration choices.  Most users will not need
 // to directly modify these, but they are here for unusual needs, i.e.
 // performance tuning or adjusting to non-typical machines.
