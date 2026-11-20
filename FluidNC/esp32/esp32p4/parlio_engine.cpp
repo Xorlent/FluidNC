@@ -222,7 +222,14 @@ bool initParlio() {
     parlio_ll_tx_enable_clock_gating(&PARL_IO, false);
     parlio_ll_tx_set_bus_width(&PARL_IO, 16);
     parlio_ll_tx_set_bit_pack_order(&PARL_IO, PARLIO_BIT_PACK_ORDER_LSB);
+    // IDF 5.5.5 renamed the TX edge helper. Both forms select the same
+    // non-inverted rising-edge clock (the old POS value became the new POS
+    // enum value 0).
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 5, 5)
+    parlio_ll_tx_set_shift_clock_edge(&PARL_IO, PARLIO_SHIFT_EDGE_POS);
+#else
     parlio_ll_tx_set_sample_clock_edge(&PARL_IO, PARLIO_SAMPLE_EDGE_POS);
+#endif
     if (!parlio_ll_tx_set_valid_delay(&PARL_IO, 0, 0)) {
         log_error("PARLIO valid delay unsupported");
         return false;

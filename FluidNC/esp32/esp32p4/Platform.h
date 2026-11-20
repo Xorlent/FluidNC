@@ -14,6 +14,9 @@
 #define MAX_N_I2C SOC_I2C_NUM
 #define MAX_N_ETH 1
 #define MAX_N_USB_HOST 0
+// USB mass-storage host backend for the logical /sd volume. This is separate
+// from MAX_N_USB_HOST, which controls the USB-host serial driver on S3.
+#define MAX_N_USB_MSC 1
 
 // The number that we support, regardless of how many the chip has
 #define MAX_N_DACS 0
